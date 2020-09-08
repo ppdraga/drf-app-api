@@ -38,9 +38,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.RecipeSerializer
     queryset = Recipe.objects.all()
 
+    def _params_to_ints(self, str_param):
+        return [int(str_val) for str_val in str_param.split(',')]
+
     def get_queryset(self):
         '''Return objects for the current authenticated user only'''
-        return self.queryset.filter(user=self.request.user).order_by('-id')
+        tags = self.request.query_params.get('tags')
+        ingredients = self.request.query_params.get('ingredients')
+        qs = self.queryset
+        if tags:
+            qs = qs.filter(tags__id__in=self._params_to_ints(tags))
+        if ingredients:
+            qs = qs.filter(ingredients__id__in=self._params_to_ints(ingredients))
+        return qs.filter(user=self.request.user).order_by('-id')
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
